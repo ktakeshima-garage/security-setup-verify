@@ -4,14 +4,20 @@
  */
 package example;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
 public class Example {
 
     /**
-     * ユーザー入力を文字列連結でクエリに含める（脆弱なパターン）。
-     * CodeQL が SQL インジェクションとして検出する想定。
+     * ユーザー入力を文字列連結でクエリに含め、executeQuery に渡す（脆弱なパターン）。
+     * CodeQL の java/sql-injection または java/concatenated-sql-query が検出する想定。
      */
-    public String buildQuery(String input) {
-        String query = "SELECT * FROM users WHERE name = '" + input + "'";
-        return query;
+    public ResultSet runUnsafeQuery(Connection conn, String userInput) throws SQLException {
+        String query = "SELECT * FROM users WHERE name = '" + userInput + "'";
+        Statement stmt = conn.createStatement();
+        return stmt.executeQuery(query);
     }
 }
