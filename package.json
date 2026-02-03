@@ -3,5 +3,7 @@
   "version": "1.0.0",
   "description": "Sample repo for SECURITY_SETUP_GUIDE verification",
   "private": true,
-  "dependencies": {}
+  "dependencies": {
+    "lodash": "4.17.15"
+  }
 }
