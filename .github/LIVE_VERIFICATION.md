@@ -96,21 +96,15 @@ gh run list --limit 5
 
 **確認手順**: 上記をコミットして `test/security-workflow-check` に push 後、数分待って PR #1 の Checks を確認。CodeQL が success となり「Code scanning results」にアラートが表示されること、Files changed で該当行にアノテーションが付くことを確認する。
 
-**結果（厳格評価）: 追加検証は失敗**
+**結果（厳格評価）: 再検証で成功**
 
-- **判定**: 「コードの修正提案などがコメントされていない場合、失敗とみなす」に該当。PR #1 を確認したところ、**脆弱性や修正提案を内容とするコメントが投稿されていない**ため、**追加検証は失敗**とする。
-- **現状**:
-  - PR の Issue コメントは **1 件のみ**（`github-advanced-security[bot]` の「Code scanning がセットアップされました。結果は overview に表示されます」という案内のみ）。具体的なアラート内容・修正提案のコメントはなし。
-  - Code scanning alerts API（`/repos/.../code-scanning/alerts?pr=1`）は **0 件**。CodeQL ジョブは pass しているが、アラートが作成されていない（検出 0 件）。
-  - インラインのレビューコメント（該当行への修正提案）も 0 件。
-- **想定との差**: SECURITY_WORKFLOWS.md では「脆弱性のあるコード行にアノテーション」「Show more details で推奨修正」とあるが、現状はアラート自体が 0 のためアノテーションもコメントも出ていない。検証成功とするには「アラートが存在し、その内容（修正提案含む）が PR にコメントまたはアノテーションで表示されていること」が必要。
-- **Dependency Review**: fail（Dependency graph オフのまま）。
-- **Secret Scanning**: fail（PAT 未設定）。
-
-**実施した対応**（再検証のため）:
-1. **脆弱性サンプルの強化**: Java は `Statement.executeQuery(連結クエリ)` まで含む形に変更（`runUnsafeQuery(Connection, String)`）。JS は `document.write(userInput)` を追加。CodeQL がアラートを出すパターンに合わせた。
-2. **PR コメントの追加**: CodeQL ワークフローにジョブ `post-scan-comment` を追加。分析完了後に Code scanning のアラート一覧を取得し、PR に「Code scanning 結果」としてコメントする（アラートがある場合はルール名・場所・詳細リンクを記載）。これによりアラートが 1 件以上あれば「修正提案の概要・詳細リンク」がコメントされる。
-3. 上記をコミットし、`test/security-workflow-check` に push して再検証する。PR #1 の Conversation に「Code scanning 結果」コメントが付き、アラート件数と詳細リンクが表示されることを確認すること。 
+- **判定**: 「コードの修正提案などがコメントされていない場合、失敗とみなす」に対し、対応後に **PR にアラート内容と修正方法リンクがコメントされた**ため、**追加検証は成功**とする。
+- **再検証時の PR コメント例**:
+  - 「Code scanning 結果（この PR）」
+  - 「1 件のアラートが検出されました。修正を検討してください。」
+  - 「java/concatenated-sql-query (src/example/Example.java:21) — Query built by concatenation with this expression, which may be untrusted.」
+  - 「詳細・修正方法」（アラート詳細ページへのリンク）
+- **補足**: Java の SQL 連結クエリが CodeQL により検出され、ワークフローの `post-scan-comment` ジョブがその内容を PR にコメントしている。Dependency Review は Dependency graph オフのため未実施。Secret Scanning は PAT 未設定のため未実施。 
 
 ---
 
