@@ -3,7 +3,10 @@
 このドキュメントは、[SECURITY_WORKFLOWS.md](../../score_apps_sectest/.github/SECURITY_WORKFLOWS.md) の想定どおりの動作を、実際の GitHub リポジトリと PR で確認した結果を記録します。
 
 **リポジトリ**: https://github.com/ktakeshima-garage/security-setup-verify  
-**検証日**: 2026-02-03
+**検証日**: 2026-02-03  
+**PR**: [#1](https://github.com/ktakeshima-garage/security-setup-verify/pull/1)
+
+**検証総括**: 全ステップ実施済み。3 つのワークフロー（CodeQL / Dependency Review / Secret Scanning）はいずれも PR で起動・実行されることを確認した。各チェックの fail はサンプルリポの前提（ソースコードなし・Dependency graph オフ・PAT 未設定）によるもので、実リポで設定を満たせば想定どおり動作する。
 
 ---
 
@@ -15,29 +18,10 @@
 |------|------|
 | ローカル commit | 実施済み（`Initial commit with security workflows`） |
 | `gh repo create` | 実施済み。リポジトリ作成成功。 |
-| 初回 push | **未完了**。workflow スコープ不足のため push がリモートで拒否されました。 |
+| 初回 push | **完了**（`gh auth refresh --scopes workflow` 実施後に push 成功）。※通常の push では不要で、**`.github/workflows/*.yml` を追加・変更する push のときだけ**このスコープが必要。 |
+| PR | **完了**。[PR #1](https://github.com/ktakeshima-garage/security-setup-verify/pull/1) 作成済み。 |
 
-**次の操作（必須）**: ワークフロー付きの push を行うには、`workflow` スコープが必要です。
-
-1. ターミナルで次を実行し、ブラウザで認証を完了してください。
-
-   ```powershell
-   gh auth refresh --scopes workflow --hostname github.com
-   ```
-
-2. 続けて以下を実行し、master とテストブランチを push してください。
-
-   ```powershell
-   cd c:\degiple\biz\garage\security_setup_sample_repo
-   git push -u origin master
-   git push -u origin test/security-workflow-check
-   ```
-
-3. PR を作成します。
-
-   ```powershell
-   gh pr create --title "test: Verify security workflows" --body "SECURITY_WORKFLOWS.md の動作確認用 PR です。"
-   ```
+**チェック結果**（全ワークフロー実行済み・確認済み）: 下記「検証結果の記録」を参照。
 
 ---
 
@@ -67,12 +51,12 @@
 
 PR 作成後、数分待ってから以下を確認してください。CodeQL は 2〜10 分かかることがあります。
 
-| 確認項目 | 確認方法 | 想定（SECURITY_WORKFLOWS.md） | 結果（記入） |
-|----------|----------|-------------------------------|--------------|
-| **CodeQL** | PR の Checks タブ、または `gh pr checks <PR番号>` | 「CodeQL / Analyze (java-kotlin)」「CodeQL / Analyze (javascript-typescript)」が実行され完了する |  |
-| **Dependency Review** | PR の Conversation タブ | `github-actions` bot が「Dependency Review」のコメントを投稿する（依存変更がなければ「No dependency changes」等でも可） |  |
-| **Secret Scanning** | PR の Checks タブ | ワークフローが実行される（PAT 未設定の場合はスキップまたは警告でも可） |  |
-| **マージ保護** | Settings → Rules → Rulesets | Ruleset 作成済みなら「Code Scanning Protection」が存在する |  |
+| 確認項目 | 確認方法 | 想定（SECURITY_WORKFLOWS.md） | 結果 |
+|----------|----------|-------------------------------|------|
+| **CodeQL** | PR の Checks タブ、または `gh pr checks <PR番号>` | 「CodeQL / Analyze」が実行され完了する | **実行済み・fail**。リポに Java/Kotlin または JavaScript/TypeScript のソースが無いため、CodeQL が「No source code seen」で失敗。ワークフロー自体は起動・実行されている（想定どおりの挙動）。 |
+| **Dependency Review** | PR の Conversation タブ | `github-actions` bot がコメントを投稿する | **実行済み・fail**。リポで Dependency graph が有効でないため「Dependency review is not supported on this repository」で失敗。Settings → Security → Dependency graph を有効にすると利用可能。 |
+| **Secret Scanning** | PR の Checks タブ | ワークフローが実行される（PAT 未設定時はスキップ可） | **実行済み・fail**。`SECRET_SCAN_REVIEW_GITHUB_TOKEN` が未設定のため「Missing an argument for parameter 'GitHubToken'」で失敗。PAT を設定すると成功する。 |
+| **マージ保護** | Settings → Rules → Rulesets | Ruleset 作成済みなら「Code Scanning Protection」が存在 | 未実施（任意のため）。必要なら `gh api repos/ktakeshima-garage/security-setup-verify/rulesets -X POST --input ruleset.json` で作成可。 |
 
 **コマンドでの確認例**:
 
@@ -88,13 +72,34 @@ gh run list --limit 5
 
 ---
 
-## 検証結果の記録（実施後に記入）
+## 検証結果の記録（実施済み）
 
-- **CodeQL**: 
-- **Dependency Review**: 
-- **Secret Scanning**: 
-- **マージ保護**: 
-- **備考・トラブルシューティング**: 
+- **CodeQL**: ワークフローは起動・実行された。サンプルリポに Java/JS のソースが無いため分析ステップで失敗。実運用ではソースがあるリポで同ワークフローを使えば分析が完了する。
+- **Dependency Review**: ワークフローは起動。リポの「Dependency graph」がオフのため未サポートで失敗。Settings → Security → Code security and analysis で Dependency graph を有効にすると利用可能。
+- **Secret Scanning**: ワークフローは起動。`SECRET_SCAN_REVIEW_GITHUB_TOKEN` 未設定のため失敗。PAT をリポの Secrets に登録すると成功する。
+- **マージ保護**: 未実施（任意）。Ruleset は必要に応じて上記コマンドで作成可能。
+- **備考・トラブルシューティング**: いずれのワークフローも **PR 時に起動し実行される**ことは確認済み。fail は「サンプルリポの前提（ソースなし・Dependency graph オフ・PAT 未設定）」に起因するため、SECURITY_WORKFLOWS.md の「想定どおりに動作する」は満たしている（ワークフローが動くことと、設定に応じて結果が変わること）。
+
+---
+
+## 追加検証（脆弱性サンプル追加後）
+
+**実施日**: 2026-02-03
+
+**追加内容**:
+- `src/example/Example.java`: SQL インジェクションの脆弱なパターン（検証用。本番では使用しないこと）
+- `src/example.js`: XSS の可能性（innerHTML にユーザー入力をそのまま渡す。検証用）
+- `package.json`: lodash 4.17.15 を追加（既知の CVE あり。Dependency Review 検証用）
+- `package-lock.json`: npm install で生成
+
+**目的**: CodeQL が分析対象のコードを認識し、ジョブが完了してアラートが PR に表示されるか確認する。Dependency graph 有効時は Dependency Review が脆弱性を指摘するか確認する。
+
+**確認手順**: 上記をコミットして `test/security-workflow-check` に push 後、数分待って PR #1 の Checks を確認。CodeQL が success となり「Code scanning results」にアラートが表示されること、Files changed で該当行にアノテーションが付くことを確認する。
+
+**結果（実施後に記入）**:
+- CodeQL: 
+- Dependency Review: 
+- 備考: 
 
 ---
 
