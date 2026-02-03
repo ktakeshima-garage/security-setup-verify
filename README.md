@@ -14,3 +14,4 @@ SECURITY_SETUP_GUIDE.md の手順を検証するためのサンプルリポジ�
 - Step 6 の Dependency Review 確認用の `package.json`
 - Step 5 用の `ruleset.json` サンプル
 - 検証結果: [.github/VERIFICATION_REPORT.md](.github/VERIFICATION_REPORT.md)
+- ライブ検証（GitHub リポ・PR）: [.github/LIVE_VERIFICATION.md](.github/LIVE_VERIFICATION.md)
