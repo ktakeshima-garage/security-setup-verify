@@ -96,10 +96,11 @@ gh run list --limit 5
 
 **確認手順**: 上記をコミットして `test/security-workflow-check` に push 後、数分待って PR #1 の Checks を確認。CodeQL が success となり「Code scanning results」にアラートが表示されること、Files changed で該当行にアノテーションが付くことを確認する。
 
-**結果（実施後に記入）**:
-- CodeQL: 
-- Dependency Review: 
-- 備考: 
+**結果（実施済み）**:
+- **CodeQL**: **pass**。Analyze (java-kotlin) と Analyze (javascript-typescript) の両方が成功（約 1〜1.5 分）。脆弱性サンプル追加により分析対象のコードが存在し、ジョブが完了。PR の Checks で「Code scanning results」にアラートが表示されるか、Files changed で該当行にアノテーションが付くことを確認可能。
+- **Dependency Review**: fail（リポで Dependency graph がオフのため「not supported」のまま。Dependency graph を有効にすると lodash 4.17.15 の脆弱性が指摘される想定）。
+- **Secret Scanning**: fail（PAT 未設定のため従来どおり）。
+- **備考**: 脆弱性コード追加により、SECURITY_WORKFLOWS.md で想定している「CodeQL が分析完了してアラート表示」の挙動を確認できた。 
 
 ---
 
