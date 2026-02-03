@@ -1,0 +1,7 @@
+{
+  "name": "security-setup-sample-repo",
+  "version": "1.0.0",
+  "description": "Sample repo for SECURITY_SETUP_GUIDE verification",
+  "private": true,
+  "dependencies": {}
+}

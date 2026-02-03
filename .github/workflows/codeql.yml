@@ -1,0 +1,67 @@
+# CodeQL Advanced Setup - PR脆弱性自動検出
+#
+# このワークフローは以下の機能を提供します:
+# - PRにコミットが追加された際の自動セキュリティスキャン
+# - 検出された脆弱性のPRへの自動アノテーション表示
+# - マージ前のセキュリティチェック
+
+name: "CodeQL"
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  schedule:
+    - cron: '0 0 * * 1'  # 毎週月曜日に実行
+
+permissions:
+  security-events: write
+  contents: read
+  pull-requests: read
+  actions: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ===================================
+          # 対象言語に応じて以下を調整してください
+          # ===================================
+          - language: java-kotlin
+            build-mode: none
+          - language: javascript-typescript
+            build-mode: none
+          # 他の言語を追加する場合:
+          # - language: python
+          #   build-mode: none
+          # - language: go
+          #   build-mode: autobuild
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java JDK
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

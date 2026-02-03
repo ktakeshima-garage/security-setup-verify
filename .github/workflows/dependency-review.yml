@@ -1,0 +1,26 @@
+name: Dependency Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          # 以下の重大度以上の脆弱性で失敗
+          fail-on-severity: moderate
+          # 禁止するライセンス（必要に応じて調整）
+          deny-licenses: GPL-2.0, GPL-3.0
+          # PR にコメントを追加
+          comment-summary-in-pr: always
